@@ -21,9 +21,10 @@ public class HttpClientsFacade {
         );
     }
 
-    public void sendRequests(ThreadType threads, long count) {
+    public long sendRequests(ThreadType threads, long count) {
         var timeWaiting = httpClientPerThreadType.get(threads).execute(count);
         log.warn("Spent {} ms waiting for {} requests execution using {} threads", timeWaiting, count, threads);
+        return timeWaiting;
     }
 
     private static final class LoomHttpClient extends ThreadPoolBasedHttpClient {
@@ -36,7 +37,8 @@ public class HttpClientsFacade {
     private static final class LoomAgnosticHttpClient extends ThreadPoolBasedHttpClient {
 
         LoomAgnosticHttpClient(String getServerUrl) throws URISyntaxException {
-            super(Executors.newFixedThreadPool(50), getServerUrl);
+            //            super(Executors.newFixedThreadPool(50), getServerUrl);
+            super(Executors.newThreadPerTaskExecutor(Thread.ofPlatform().factory()), getServerUrl);
         }
     }
 }

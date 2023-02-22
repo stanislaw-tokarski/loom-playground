@@ -44,7 +44,8 @@ class ThreadPoolBasedHttpClient {
         LongStream.range(0, requestsCount)
                 .forEach(__ -> futures.add(
                         CompletableFuture.supplyAsync(this::sendGet, executorService)
-                                .thenAcceptAsync(markSuccess(counter), executorService)));
+                                .thenAcceptAsync(markSuccess(counter), executorService)
+                                .exceptionallyAsync(this::logException, executorService)));
         futures.forEach(CompletableFuture::join);
         var finishTime = System.currentTimeMillis();
         long successfulRequestsCount = counter.sum();
@@ -61,7 +62,7 @@ class ThreadPoolBasedHttpClient {
             return httpClient
                     .send(httpGetRequest, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
-            log.error("Error when sending GET request", e);
+            log.error("Error when sending GET request: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -69,11 +70,19 @@ class ThreadPoolBasedHttpClient {
     private Consumer<HttpResponse<String>> markSuccess(LongAdder counter) {
         return rs -> {
             if (rs.statusCode() == 200) {
-                log.info("Thread {} got response with status 200", currentThread().getName());
+                log.info("Thread {} [virtual={}] got response with status 200",
+                        currentThread().getName(), currentThread().isVirtual());
                 counter.increment();
             } else {
-                log.error("Thread {} got response with status {}", currentThread().getName(), rs.statusCode());
+                log.error("Thread {} [virtual={}] got response with status {}",
+                        currentThread().getName(), currentThread().isVirtual(), rs.statusCode());
             }
         };
+    }
+
+    private Void logException(Throwable throwable) {
+        log.error("Thread {} [virtual={}] completed exceptionally",
+                currentThread().getName(), currentThread().isVirtual());
+        return null;
     }
 }
