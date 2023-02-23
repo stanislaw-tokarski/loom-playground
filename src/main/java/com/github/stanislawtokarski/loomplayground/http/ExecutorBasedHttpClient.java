@@ -1,5 +1,6 @@
 package com.github.stanislawtokarski.loomplayground.http;
 
+import com.github.stanislawtokarski.loomplayground.AsyncStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,14 @@ class ExecutorBasedHttpClient {
                 .build();
     }
 
-    long executeAsync(long requestsCount) {
+    long execute(AsyncStrategy strategy, long requestCount) {
+        return switch (strategy) {
+            case NON_BLOCKING -> executeNonBlocking(requestCount);
+            case BLOCKING -> executeBlocking(requestCount);
+        };
+    }
+
+    private long executeNonBlocking(long requestsCount) {
         var startTime = System.currentTimeMillis();
         var counter = new LongAdder();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -57,7 +65,7 @@ class ExecutorBasedHttpClient {
         return finishTime - startTime;
     }
 
-    long execute(long requestsCount) {
+    private long executeBlocking(long requestsCount) {
         var startTime = System.currentTimeMillis();
         List<Future<HttpResponse<String>>> futures = new ArrayList<>();
         LongStream.range(0, requestsCount)
@@ -69,16 +77,16 @@ class ExecutorBasedHttpClient {
                     }
                 })));
         var counter = new LongAdder();
-        for (Future<HttpResponse<String>> future : futures) {
+        futures.forEach(future -> {
             try {
                 var rs = future.get();
                 if (rs != null) {
                     markSuccess(counter).accept(rs);
                 }
             } catch (ExecutionException | InterruptedException e) {
-                log.info("Computation completed exceptionally", e);
+                log.info("Computation completed with exception", e);
             }
-        }
+        });
         long successfulRequestsCount = counter.sum();
         if (successfulRequestsCount != requestsCount) {
             log.warn("Some requests were unsuccessful. Wanted {}, but got {}", requestsCount, successfulRequestsCount);
@@ -113,7 +121,7 @@ class ExecutorBasedHttpClient {
     }
 
     private Void logException(Throwable throwable) {
-        log.info("Thread {} [virtual={}] completed exceptionally",
+        log.info("Thread {} [virtual={}] completed with exception",
                 currentThread().getName(), currentThread().isVirtual());
         return null;
     }

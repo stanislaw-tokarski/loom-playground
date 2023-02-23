@@ -16,15 +16,18 @@ public class LoomPlaygroundApplication {
     public static void main(String[] args) throws URISyntaxException {
         var ctx = SpringApplication.run(LoomPlaygroundApplication.class, args);
         var dummyServiceUrl = ctx.getEnvironment().getProperty("api.url.service.dummy");
-        var requestsExecutor = new HttpClientsFacade(dummyServiceUrl);
-        var asyncPlatformTime = requestsExecutor.sendRequests(RequestsSendingStrategy.ASYNC, ThreadType.PLATFORM, 1000);
-        var asyncVirtualTime = requestsExecutor.sendRequests(RequestsSendingStrategy.ASYNC, ThreadType.VIRTUAL, 1000);
-        var syncPlatformTime = requestsExecutor.sendRequests(RequestsSendingStrategy.SYNC, ThreadType.PLATFORM, 1000);
-        var syncVirtualTime = requestsExecutor.sendRequests(RequestsSendingStrategy.SYNC, ThreadType.VIRTUAL, 1000);
-        log.warn("Took {} ms with async platform threads and {} ms with async virtual threads",
-                asyncPlatformTime, asyncVirtualTime);
-        log.warn("Took {} ms with sync platform threads and {} ms with sync virtual threads",
-                syncPlatformTime, syncVirtualTime);
+        var httpClient = new HttpClientsFacade(dummyServiceUrl);
+        var blockingPlatformTime = httpClient.sendRequests(AsyncStrategy.BLOCKING, ThreadType.PLATFORM, 1000);
+        var blockingVirtualTime = httpClient.sendRequests(AsyncStrategy.BLOCKING, ThreadType.VIRTUAL, 1000);
+        var nonBlockingPlatformTime = httpClient.sendRequests(AsyncStrategy.NON_BLOCKING, ThreadType.PLATFORM, 1000);
+        var nonBlockingVirtualTime = httpClient.sendRequests(AsyncStrategy.NON_BLOCKING, ThreadType.VIRTUAL, 1000);
+        log.warn("""
+                Times spent on waiting for completion:
+                BLOCKING IMPL WITH PLATFORM THREADS: {} ms
+                BLOCKING IMPL WITH VIRTUAL THREADS: {} ms
+                NON BLOCKING IMPL WITH PLATFORM THREADS: {} ms
+                NON BLOCKING IMPL WITH VIRTUAL THREADS: {} ms
+                """, blockingPlatformTime, blockingVirtualTime, nonBlockingPlatformTime, nonBlockingVirtualTime);
         ctx.close();
     }
 }

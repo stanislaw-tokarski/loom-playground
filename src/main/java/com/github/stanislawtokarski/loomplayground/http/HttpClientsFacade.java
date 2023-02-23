@@ -1,6 +1,6 @@
 package com.github.stanislawtokarski.loomplayground.http;
 
-import com.github.stanislawtokarski.loomplayground.RequestsSendingStrategy;
+import com.github.stanislawtokarski.loomplayground.AsyncStrategy;
 import com.github.stanislawtokarski.loomplayground.ThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,13 +22,9 @@ public class HttpClientsFacade {
         );
     }
 
-    public long sendRequests(RequestsSendingStrategy strategy, ThreadType threads, long count) {
+    public long sendRequests(AsyncStrategy strategy, ThreadType threads, long count) {
         log.warn("Executing requests using {} strategy and {} threads", strategy, threads);
-        var httpClient = httpClientPerThreadType.get(threads);
-        return switch (strategy) {
-            case ASYNC -> httpClient.executeAsync(count);
-            case SYNC -> httpClient.execute(count);
-        };
+        return httpClientPerThreadType.get(threads).execute(strategy, count);
     }
 
     private static final class LoomHttpClient extends ExecutorBasedHttpClient {
