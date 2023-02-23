@@ -38,7 +38,7 @@ Scheduler:
 - Mounting a virtual thread means temporarily copying the needed stack frames from the heap to the stack of the carrier thread, and borrowing the carriers stack while it is mounted
 - Virtual threads do not require or expect application code to explicitly hand back control to the scheduler
 - Implemented using a work-stealing ForkJoinPool that operates in FIFO mode
-- Every time that a virtual thread waits for e.g. I/O, it *yields* to free its carrier thread. Once the IO operation gets completed, the virtual thread is put back into the FIFO queue of the ForkJoinPool and will wait until a carrier thread is available
+- Every time that a virtual thread waits for e.g. I/O, it *yields* to free its carrier thread. Once the I/O operation gets completed, the virtual thread is put back into the FIFO queue of the ForkJoinPool and will wait until a carrier thread is available
 - Max number of platform threads available to the scheduler can be configured with system property *jdk.virtualThreadScheduler.maxPoolSize* (default = 256)
 
 Continuation:
