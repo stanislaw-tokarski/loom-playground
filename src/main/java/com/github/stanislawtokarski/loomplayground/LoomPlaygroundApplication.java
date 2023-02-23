@@ -17,9 +17,14 @@ public class LoomPlaygroundApplication {
         var ctx = SpringApplication.run(LoomPlaygroundApplication.class, args);
         var dummyServiceUrl = ctx.getEnvironment().getProperty("api.url.service.dummy");
         var requestsExecutor = new HttpClientsFacade(dummyServiceUrl);
-        var platformTime = requestsExecutor.sendRequests(ThreadType.PLATFORM, 100);
-        var virtualTime = requestsExecutor.sendRequests(ThreadType.VIRTUAL, 100);
-        log.info("Took {} ms with platform threads and {} ms with virtual threads", platformTime, virtualTime);
+        var asyncPlatformTime = requestsExecutor.sendRequests(RequestsSendingStrategy.ASYNC, ThreadType.PLATFORM, 1000);
+        var asyncVirtualTime = requestsExecutor.sendRequests(RequestsSendingStrategy.ASYNC, ThreadType.VIRTUAL, 1000);
+        var syncPlatformTime = requestsExecutor.sendRequests(RequestsSendingStrategy.SYNC, ThreadType.PLATFORM, 1000);
+        var syncVirtualTime = requestsExecutor.sendRequests(RequestsSendingStrategy.SYNC, ThreadType.VIRTUAL, 1000);
+        log.warn("Took {} ms with async platform threads and {} ms with async virtual threads",
+                asyncPlatformTime, asyncVirtualTime);
+        log.warn("Took {} ms with sync platform threads and {} ms with sync virtual threads",
+                syncPlatformTime, syncVirtualTime);
         ctx.close();
     }
 }

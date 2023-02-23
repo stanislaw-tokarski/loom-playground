@@ -1,5 +1,6 @@
 package com.github.stanislawtokarski.loomplayground.http;
 
+import com.github.stanislawtokarski.loomplayground.RequestsSendingStrategy;
 import com.github.stanislawtokarski.loomplayground.ThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ public class HttpClientsFacade {
 
     private static final Logger log = LoggerFactory.getLogger(HttpClientsFacade.class);
 
-    private final Map<ThreadType, ThreadPoolBasedHttpClient> httpClientPerThreadType;
+    private final Map<ThreadType, ExecutorBasedHttpClient> httpClientPerThreadType;
 
     public HttpClientsFacade(String getServerUrl) throws URISyntaxException {
         this.httpClientPerThreadType = Map.of(
@@ -21,20 +22,24 @@ public class HttpClientsFacade {
         );
     }
 
-    public long sendRequests(ThreadType threads, long count) {
-        var timeWaiting = httpClientPerThreadType.get(threads).execute(count);
-        log.warn("Spent {} ms waiting for {} requests execution using {} threads", timeWaiting, count, threads);
-        return timeWaiting;
+    public long sendRequests(RequestsSendingStrategy strategy, ThreadType threads, long count) {
+        log.warn("Executing requests using {} strategy and {} threads", strategy, threads);
+        var httpClient = httpClientPerThreadType.get(threads);
+        return switch (strategy) {
+            case ASYNC -> httpClient.executeAsync(count);
+            case SYNC -> httpClient.execute(count);
+        };
     }
 
-    private static final class LoomHttpClient extends ThreadPoolBasedHttpClient {
+    private static final class LoomHttpClient extends ExecutorBasedHttpClient {
 
         LoomHttpClient(String getServerUrl) throws URISyntaxException {
+            //            super(Executors.newVirtualThreadPerTaskExecutor(), getServerUrl);
             super(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory()), getServerUrl);
         }
     }
 
-    private static final class LoomAgnosticHttpClient extends ThreadPoolBasedHttpClient {
+    private static final class LoomAgnosticHttpClient extends ExecutorBasedHttpClient {
 
         LoomAgnosticHttpClient(String getServerUrl) throws URISyntaxException {
             //            super(Executors.newFixedThreadPool(50), getServerUrl);
