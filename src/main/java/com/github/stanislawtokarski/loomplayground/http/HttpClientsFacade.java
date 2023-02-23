@@ -38,7 +38,7 @@ public class HttpClientsFacade {
     private static final class LoomAgnosticHttpClient extends ExecutorBasedHttpClient {
 
         LoomAgnosticHttpClient(String getServerUrl) throws URISyntaxException {
-            //            super(Executors.newFixedThreadPool(50), getServerUrl);
+            //            super(Executors.newFixedThreadPool(256), getServerUrl);
             super(Executors.newThreadPerTaskExecutor(Thread.ofPlatform().factory()), getServerUrl);
         }
     }
