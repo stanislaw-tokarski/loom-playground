@@ -23,7 +23,7 @@ public class HttpClientsFacade {
     }
 
     public long sendRequests(AsyncStrategy strategy, ThreadType threads, long count) {
-        log.warn("Executing requests using {} strategy and {} threads", strategy, threads);
+        log.warn("Executing {} requests using {} strategy and {} threads", count, strategy, threads);
         return httpClientPerThreadType.get(threads).execute(strategy, count);
     }
 

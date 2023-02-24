@@ -32,6 +32,15 @@ public class LoomPlaygroundApplication {
                 NON BLOCKING IMPL WITH VIRTUAL THREADS: {} ms
                 """, blockingPlatformTime, blockingVirtualTime, nonBlockingPlatformTime, nonBlockingVirtualTime);
 
+//        var syncPlatformTime = httpClient.sendRequests(AsyncStrategy.SYNC, ThreadType.PLATFORM, 1000);
+//        var syncVirtualTime = httpClient.sendRequests(AsyncStrategy.SYNC, ThreadType.VIRTUAL, 1000);
+//
+//        log.warn("""
+//                Times spent on waiting for completion:
+//                SYNC WITH PLATFORM THREADS: {} ms
+//                SYNC WITH VIRTUAL THREADS: {} ms
+//                """, syncPlatformTime, syncVirtualTime);
+
         ctx.close();
     }
 }

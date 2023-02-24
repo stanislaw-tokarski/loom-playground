@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
@@ -40,10 +41,11 @@ class ExecutorBasedHttpClient {
                 .build();
     }
 
-    long execute(AsyncStrategy strategy, long requestCount) {
+    long execute(AsyncStrategy strategy, long requestsCount) {
         return switch (strategy) {
-            case NON_BLOCKING -> executeNonBlocking(requestCount);
-            case BLOCKING -> executeBlocking(requestCount);
+            case NON_BLOCKING -> executeNonBlocking(requestsCount);
+            case BLOCKING -> executeBlocking(requestsCount);
+            case SYNC -> executeSync(requestsCount);
         };
     }
 
@@ -92,6 +94,38 @@ class ExecutorBasedHttpClient {
             log.warn("Some requests were unsuccessful. Wanted {}, but got {}", requestsCount, successfulRequestsCount);
         }
         var finishTime = System.currentTimeMillis();
+        return finishTime - startTime;
+    }
+
+    private long executeSync(long requestsCount) {
+        var startTime = System.currentTimeMillis();
+        var counter = new LongAdder();
+        LongStream.range(0, requestsCount)
+                .forEach(__ -> executorService.submit(() -> {
+                    try {
+                        var rs = sendGet();
+                        if (rs != null) {
+                            markSuccess(counter).accept(rs);
+                        }
+                    } catch (Exception e) {
+                        logException(e);
+                    }
+                }));
+        var finishTime = System.currentTimeMillis();
+        // Sleep in order to notice results of GET requests - which is why this implementation
+        // absolutely does not make sense *here*, but shows how fast requests are being sent with Loom
+        // and can improve application's throughput in many other - more suitable - scenarios
+        try {
+            TimeUnit.MILLISECONDS.sleep(5000);
+        } catch (InterruptedException e) {
+            log.error("Nap interrupted :(", e);
+            throw new RuntimeException(e);
+        }
+        long successfulRequestsCount = counter.sum();
+        if (successfulRequestsCount != requestsCount) {
+            log.warn("Some requests were unsuccessful. Wanted {}, but got {}", requestsCount,
+                    successfulRequestsCount);
+        }
         return finishTime - startTime;
     }
 
