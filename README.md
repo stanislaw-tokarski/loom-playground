@@ -3,8 +3,8 @@
 ### 1. Platform vs Virtual Thread
 
 Platform Threads:
-- Managed & scheduled by OS
 - Wrappers for OS threads
+- Managed & scheduled by OS
 - System call needed to create a new kernel thread
 
 Virtual Threads:
@@ -19,15 +19,16 @@ Number of virtual threads can be significantly larger than the number of OS thre
 
 #### What **are** their goals?
 - I/O
-- Better scale (higher throughput) 
+- Better scale (higher throughput)
 - Making asynchronous code more readable (sometimes even looking as synchronous?)
 
 #### What **are not** their goals?
 - Speed (lower latency)
 - Improving results of heavy computational tasks
-- Pooling them
+- Pooling
 
 #### Concepts
+
 Carrier thread:
 - Platform thread on which the JVM scheduler allocates virtual threads
 - Single virtual thread can be handled by different carriers during its lifetime
